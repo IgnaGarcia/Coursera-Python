@@ -1,0 +1,53 @@
+sqlite
+create table 'name'(
+  'name' type constraints,
+  'name' type
+);
+
+write changes
+
+import sqlite3
+
+connect = sqlite3.cennect(':memory:')
+cursor = connect.cursor()
+
+cursor.execute("""
+  CONSULTAS ACA
+""")
+
+connect.commit()
+connect.rollback()
+
+querry = 'CONSULTA ACA'
+currencies = cursor.execute(query).fetchall()
+cursor.execute().fetchone()
+print(currencies)
+
+connect.close()
+
+objetos que maneje la bd, haga la conexion, reciba el objeto y lo inserte, genere selects a partir de muchos filtros y los guarde como objet, uno por objeto o tabla
+
+ORM es un mapeo objeto-relacion
+convierte los datos entre el lenguaje poo y la bd relacional
+permite escribir menos codigo, dejando que este se encargue de ejecular las CONSULTAS
+
+from sqlalchemy import create_engine
+from sqlalchemi.ext.declarative import declarative_base
+form sqlalchemy import Column, Integer, String, Squence
+
+Entonces creamos una clase por tabla, esta tiene que tener el atr __tablename__
+y tiene que tener un atr por cada columna, asignandole el objeto Column(Tipo, ...)
+
+La sesion sera un punto medio entre la creacion del objeto y el guardado en la bd, a esta se le puede agregar filas, consultar, eliminar y cambiar, pero no se guarda hasta hacer el commit o el rollback
+
+query(Tabla || Tabla.Columna...).order_by(Tabla.Columna...).filter_by(condicionnes).count()....[1:3]
+
+RELACIONES CON UN Colum de ForeignKey
+podemos hacer un seasion.query().join
+y el relationship con la tabla y los campos
+
+PARA hacer un delete tenemos que hacer un session.delete(objeto)
+
+Para muchos a muchos hay que crear una tabla que asocie las dos tablas que tenga los id de ambas, que sean pk y fk
+
+luego el modelo tiene que tener el relationship en cada una de las tablas
