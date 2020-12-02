@@ -2,139 +2,163 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine, Column, Integer, String, Sequence, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship
 
-engine = create_engine('sqlite:///:memory:')
-DBase = declarative_base()
+class DBMannager(object):
+  def __init__(self):
+    self.engine = create_engine('sqlite:///:memory:')
+    self.base = declarative_base()
+    Session = sessionmaker(bind=self.engine)
+    self.session = Session()
+
+  def listCursoAlumno(self):
+    return self.session.execute("""
+      SELECT *
+      FROM alumno a, curso c
+      WHERE a.cursoId = c.cursoId
+      ORDER BY a.alumnoNombre, a.alumnoApellido, c.cursoNombre
+    """).fetchall()
+
+  def listHorarioProfesor(self):
+    return self.session.execute("""
+      SELECT *
+      FROM horario h, profesor p
+      WHERE h.profesorId = p.profesorId
+      ORDER BY h.dia, p.profesorNombre, p.profesorApellido
+    """).fetchall()
+
+  def listHorarioCurso(self):
+    return self.session.execute("""
+      SELECT *
+      FROM horario h, curso c
+      WHERE h.cursoId = c.cursoId
+      ORDER BY h.dia, c.cursoNombre
+    """).fetchall()
 
 
-class Curso(DBase):
-    __tablename__ = 'curso'
+  def saveObject(self, objeto):
+    self.session.add(objeto)
+    self.session.commit()
 
-    id = Column(Integer, Sequence('curso_id_seq'), primary_key=True)
-    nombre = Column(String)
+  def saveList(self, lista):
+    self.session.add_all(lista)
+    self.session.commit()
 
-    alumnos = relationship('Alumno', back_populates='curso')
-    horario = relationship('Horario', back_populates='curso')
+db = DBMannager()
 
-    def registrar(self):
-        Session = sessionmaker(bind=engine)
-        Session().add(self)
-        Session().commit()
+class Horario(db.base):
+  __tablename__ = 'horario'
 
-    def __repr__(self):
-        return '{}'.format(self.nombre)
+  dia = Column('dia', String, primary_key=True)
+  profesorId = Column('profesorId', Integer, ForeignKey('profesor.profesorId'), primary_key=True)
+  cursoId = Column('cursoId', Integer, ForeignKey('curso.cursoId'), primary_key=True)
+  desdeHs = Column('desdeHs', Integer)
+  hastaHs = Column('hastaHs', Integer)
 
+  profesores = relationship('Profesor', back_populates='horarios')
+  cursos = relationship('Curso', back_populates='horarios')
 
-class Profesor(DBase):
-    __tablename__ = 'profesor'
-
-    id = Column(Integer, Sequence('profesor_id_seq'), primary_key=True)
-    nombre = Column(String)
-    apellido = Column(String)
-
-    horario = relationship('Horario', back_populates='profesor')
-
-    def registrar(self):
-        Session = sessionmaker(bind=engine)
-        Session().add(self)
-        Session().commit()
-
-    def __repr__(self):
-        return '{} {}'.format(self.nombre, self.apellido)
+  def __repr__(self):
+    return '{} {} {}'.format(self.dia, self.desdeHs, self.hastaHs)
 
 
-class Horario(DBase):
-    __tablename__ = 'horario'
+class Curso(db.base):
+  __tablename__ = 'curso'
 
-    cursoId = Column(Integer, ForeignKey('curso.id'), primary_key=True),
-    profesorId = Column(Integer, ForeignKey('profesor.id'), primary_key=True),
-    dia = Column(String, primary_key=True)
-    desdeHs = Column(Integer)
-    hastaHs = Column(Integer)
+  cursoId = Column('cursoId', Integer, Sequence('curso_cursoId_seq'), primary_key=True)
+  cursoNombre = Column('cursoNombre', String)
 
-    profesor = relationship('Profesor', back_populates='horario')
-    curso = relationship('Curos', back_populates='horario')
+  alumnos = relationship('Alumno', back_populates='curso')
+  horarios = relationship('Horario', back_populates='cursos')
 
-    def registrar(self):
-        Session = sessionmaker(bind=engine)
-        Session().add(self)
-        Session().commit()
-
-    def __repr__(self):
-        return '{} de {}hs a {}hs'.format(self.dia, self.desdeHs, self.hastaHs)
+  def __repr__(self):
+    return '{}'.format(self.cursoNombre)
 
 
-class Alumno(DBase):
-    __tablename__ = 'alumno'
+class Profesor(db.base):
+  __tablename__ = 'profesor'
 
-    id = Column(Integer, Sequence('alumno_id_seq'), primary_key=True)
-    nombre = Column(String)
-    apellido = Column(String)
-    cursoId = Column(Integer, ForeignKey('curso.id'))
+  profesorId = Column('profesorId', Integer, Sequence('profesor_profesorId_seq'), primary_key=True)
+  profesorNombre = Column('profesorNombre', String)
+  profesorApellido = Column('profesorApellido', String)
 
-    curso = relationship('Curso', back_populates='alumnos')
+  horarios = relationship('Horario', back_populates='profesores')
 
-    def registrar(self):
-        Session = sessionmaker(bind=engine)
-        Session().add(self)
-        Session().commit()
-
-    def __repr__(self):
-        return '{} {}'.format(self.nombre, self.apellido)
+  def __repr__(self):
+    return '{} {}'.format(self.profesorNombre, self.profesorApellido)
 
 
-DBase.metadata.create_all(engine)
-Session = sessionmaker(bind=engine)
+class Alumno(db.base):
+  __tablename__ = 'alumno'
 
-curso1 = Curso(nombre='Bases de Datos')
-curso1.registrar()
-curso2 = Curso(nombre='Algoritmos')
-curso2.registrar()
+  alumnoId = Column('alumnoId', Integer, Sequence('alumno_alumnoId_seq'), primary_key=True)
+  alumnoNombre = Column('alumnoNombre', String)
+  alumnoApellido = Column('alumnoApellido', String)
+  cursoId = Column('cursoId', Integer, ForeignKey('curso.cursoId'))
 
+  curso = relationship('Curso', back_populates='alumnos')
 
-profesor1 = Profesor(nombre='Horacio', apellido='Kans')
-profesor1.registrar()
-profesor2 = Profesor(nombre='Jorge', apellido='Mendoza')
-profesor3 = Profesor(nombre='Manuel', apellido='Benitez')
-profesor4 = Profesor(nombre='Angela', apellido='Lopez')
+  def __repr__(self):
+    return '{} {}'.format(self.alumnoNombre, self.alumnoApellido)
 
-Session().addAll([profesor2, profesor3, profesor4])
+db.base.metadata.create_all(db.engine)
 
+alumn1 = Alumno(alumnoNombre='Nacho', alumnoApellido='Garcia')
+alumn2 = Alumno(alumnoNombre='Juana', alumnoApellido='Perez')
+alumn3 = Alumno(alumnoNombre='Matias', alumnoApellido='Gonzales')
+alumn4 = Alumno(alumnoNombre='Liliana', alumnoApellido='Herrera')
+alumn5 = Alumno(alumnoNombre='Martin', alumnoApellido='Gimenez')
+alumn6 = Alumno(alumnoNombre='Sabrina', alumnoApellido='Sosa')
+alumn7 = Alumno(alumnoNombre='Santiago', alumnoApellido='Heredia')
+alumn8 = Alumno(alumnoNombre='Abril', alumnoApellido='Obispo')
+alumn9 = Alumno(alumnoNombre='Julian', alumnoApellido='Lopez')
 
-horario1 = Horario(cursoId=1, profesorId=1, dia='Lunes', desdeHs=8, hastaHs=12)
-horario1.registrar()
-horario2 = Horario(cursoId=1, profesorId=2,
-                   dia='Miercoles', desdeHs=18, hastaHs=22)
-horario3 = Horario(cursoId=2, profesorId=3,
-                   dia='Martes', desdeHs=18, hastaHs=23)
-horario4 = Horario(cursoId=2, profesorId=4,
-                   dia='Viernes', desdeHs=8, hastaHs=13)
-horario5 = Horario(cursoId=2, profesorId=1,
-                   dia='Jueves', desdeHs=14, hastaHs=19)
+curso1 = Curso(cursoNombre='Bases de Datos')
+curso2 = Curso(cursoNombre='Algoritmos')
 
-Session().addAll([horario2, horario3, horario4, horario5])
+alumn1.curso = curso1
+alumn2.curso = curso1
+alumn3.curso = curso1
+alumn4.curso = curso1
+alumn5.curso = curso1
+alumn6.curso = curso2
+alumn7.curso = curso2
+alumn8.curso = curso2
+alumn9.curso = curso2
 
+profesor1 = Profesor(profesorNombre='Horacio', profesorApellido='Kans')
+profesor2 = Profesor(profesorNombre='Jorge', profesorApellido='Mendoza')
+profesor3 = Profesor(profesorNombre='Manuel', profesorApellido='Benitez')
+profesor4 = Profesor(profesorNombre='Angela', profesorApellido='Lopez')
 
-alumn1 = Alumno(nombre='Nacho', apellido='Garcia', cursoId=1)
-alumn1.registrar()
-alumn2 = Alumno(nombre='Juana', apellido='Perez', cursoId=1)
-alumn3 = Alumno(nombre='Matias', apellido='Gonzales', cursoId=1)
-alumn4 = Alumno(nombre='Liliana', apellido='Herrera', cursoId=1)
-alumn5 = Alumno(nombre='Martin', apellido='Gimenez', cursoId=1)
-alumn6 = Alumno(nombre='Sabrina', apellido='Sosa', cursoId=2)
-alumn7 = Alumno(nombre='Santiago', apellido='Heredia', cursoId=2)
-alumn8 = Alumno(nombre='Abril', apellido='Obispo', cursoId=2)
-alumn9 = Alumno(nombre='Julian', apellido='Lopez', cursoId=2)
+horario1 = Horario(dia='Lunes', desdeHs=8, hastaHs=12)
+horario2 = Horario(dia='Miercoles', desdeHs=18, hastaHs=22)
+horario3 = Horario(dia='Martes', desdeHs=18, hastaHs=23)
+horario4 = Horario(dia='Viernes', desdeHs=8, hastaHs=13)
+horario5 = Horario(dia='Jueves', desdeHs=14, hastaHs=19)
 
-Session().addAll([alumn2, alumn3, alumn4,
-                  alumn5, alumn6, alumn7, alumn8, alumn9])
+horario1.cursos = curso1
+horario1.profesores = profesor1
+horario2.cursos = curso1
+horario2.profesores = profesor2
+horario3.cursos = curso2
+horario3.profesores = profesor3
+horario4.cursos = curso2
+horario4.profesores = profesor4
+horario5.cursos = curso2
+horario5.profesores = profesor1
 
-Session().commit()
+db.saveObject(alumn1)
+db.saveObject(profesor1)
+db.saveObject(horario1)
+db.saveList([alumn2, alumn3, alumn4, alumn5, alumn6, alumn7, alumn8, alumn9])
+db.saveList([curso1, curso2])
+db.saveList([profesor2, profesor3, profesor4])
+db.saveList([horario2, horario3, horario4, horario5])
 
-# Alumnos con curso
-Session().query(Alumno).join(Curso, Alumno.cursoId == Curso.id).all()
+for x in db.listCursoAlumno():
+  print(x)
 
-# Horario de Profesores
-Session().query(Profesor).join(Horario, Profesor.id == Horario.profesorId).all()
+for x in db.listHorarioProfesor():
+  print(x)
 
-# Horario de Curso
-Session().query(Curso).join(Horario, Curso.id == Horario.cursoId).all()
+for x in db.listHorarioCurso():
+  print(x)

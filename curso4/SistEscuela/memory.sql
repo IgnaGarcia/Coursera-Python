@@ -1,14 +1,14 @@
 BEGIN TRANSACTION;
 CREATE TABLE "profesor"(
-	"id"	INTEGER,
-	"nombre"	TEXT,
-	"apellido"	TEXT,
-	PRIMARY KEY("id")
+	"profesorId"	INTEGER,
+	"profesorNombre"	TEXT,
+	"profesorApellido"	TEXT,
+	PRIMARY KEY("profesorId")
 );
 CREATE TABLE "curso"(
-	"id"	INTEGER,
-	"nombre"	TEXT,
-	PRIMARY KEY("id")
+	"cursoId"	INTEGER,
+	"cursoNombre"	TEXT,
+	PRIMARY KEY("cursoId")
 );
 CREATE TABLE "horario"(
 	"dia"	INTEGER,
@@ -17,15 +17,15 @@ CREATE TABLE "horario"(
 	"desdeHs"	INTEGER,
 	"hastaHs"	INTEGER,
 	PRIMARY KEY("dia","cursoId","profesorId"),
-	FOREIGN KEY("profesorId") REFERENCES "profesor"("id"),
-	FOREIGN KEY("cursoId") REFERENCES "curso"("id")
+	FOREIGN KEY("profesorId") REFERENCES "profesor"("profesorId"),
+	FOREIGN KEY("cursoId") REFERENCES "curso"("cursoId")
 );
 CREATE TABLE "alumno"(
-	"id"	INTEGER,
-	"nombre"	TEXT,
-	"apellido"	TEXT,
+	"alumnoId"	INTEGER,
+	"alumnoNombre"	TEXT,
+	"alumnoApellido"	TEXT,
 	"cursoId"	INTEGER,
-	PRIMARY KEY("id"),
-	FOREIGN KEY("cursoId") REFERENCES "curso"("id")
+	PRIMARY KEY("alumnoId"),
+	FOREIGN KEY("cursoId") REFERENCES "curso"("cursoId")
 );
 COMMIT;
