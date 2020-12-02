@@ -1,13 +1,18 @@
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine, Column, Integer, String, Sequence, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.ext.declarative import declarative_base
 
 class DBMannager(object):
   def __init__(self):
-    self.engine = create_engine('sqlite:///:memory:')
-    self.base = declarative_base()
-    Session = sessionmaker(bind=self.engine)
-    self.session = Session()
+    try:
+      self.engine = create_engine('sqlite:///db')
+      self.base = declarative_base()
+      Session = sessionmaker(bind=self.engine)
+      self.session = Session()
+
+      print('Conectado')
+    except:
+      raise
 
   def listCursoAlumno(self):
     return self.session.execute("""
@@ -33,16 +38,38 @@ class DBMannager(object):
       ORDER BY h.dia, c.cursoNombre
     """).fetchall()
 
+  def nuevoAlumno(self, nombre, apellido, cursoId):
+    return Alumno(alumnoNombre=nombre, alumnoApellido=apellido, cursoId=cursoId)
+  
+  def nuevoProfesor(self, nombre, apellido):
+    return Profesor(profesorNombre=nombre, profesorApellido=apellido)
+
+  def nuevoCurso(self, nombre):
+    return Curso(cursoNombre=nombre)
+
+  def nuevoHorario(self, dia, desdeHs, hastaHs, cursoId, profesorId):
+    return Horario(dia=dia, desdeHs=desdeHs, hastaHs=hastaHs, cursoId=cursoId, profesorId=profesorId)
 
   def saveObject(self, objeto):
-    self.session.add(objeto)
-    self.session.commit()
+    try:
+        self.session.add(objeto)
+        self.session.commit()
+        return('Guardado')
+    except:
+        self.session.rollback()
+        raise
 
   def saveList(self, lista):
-    self.session.add_all(lista)
-    self.session.commit()
+    try:
+        self.session.add_all(lista)
+        self.session.commit()
+        return('Guardado')
+    except:
+        self.session.rollback()
+        raise
 
 db = DBMannager()
+
 
 class Horario(db.base):
   __tablename__ = 'horario'
@@ -101,58 +128,37 @@ class Alumno(db.base):
 
 db.base.metadata.create_all(db.engine)
 
-alumn1 = Alumno(alumnoNombre='Nacho', alumnoApellido='Garcia')
-alumn2 = Alumno(alumnoNombre='Juana', alumnoApellido='Perez')
-alumn3 = Alumno(alumnoNombre='Matias', alumnoApellido='Gonzales')
-alumn4 = Alumno(alumnoNombre='Liliana', alumnoApellido='Herrera')
-alumn5 = Alumno(alumnoNombre='Martin', alumnoApellido='Gimenez')
-alumn6 = Alumno(alumnoNombre='Sabrina', alumnoApellido='Sosa')
-alumn7 = Alumno(alumnoNombre='Santiago', alumnoApellido='Heredia')
-alumn8 = Alumno(alumnoNombre='Abril', alumnoApellido='Obispo')
-alumn9 = Alumno(alumnoNombre='Julian', alumnoApellido='Lopez')
+curso1 = db.nuevoCurso('Bases de Datos')
+curso2 = db.nuevoCurso('Algoritmos')
 
-curso1 = Curso(cursoNombre='Bases de Datos')
-curso2 = Curso(cursoNombre='Algoritmos')
+alumn1 = db.nuevoAlumno('Nacho', 'Garcia', 1)
+alumn2 = db.nuevoAlumno('Juana', 'Perez', 1)
+alumn3 = db.nuevoAlumno('Matias', 'Gonzales', 1)
+alumn4 = db.nuevoAlumno('Liliana', 'Herrera', 1)
+alumn5 = db.nuevoAlumno('Martin', 'Gimenez', 1)
+alumn6 = db.nuevoAlumno('Sabrina', 'Sosa', 2)
+alumn7 = db.nuevoAlumno('Santiago', 'Heredia', 2)
+alumn8 = db.nuevoAlumno('Abril', 'Obispo', 2)
+alumn9 = db.nuevoAlumno('Julian', 'Lopez', 2)
 
-alumn1.curso = curso1
-alumn2.curso = curso1
-alumn3.curso = curso1
-alumn4.curso = curso1
-alumn5.curso = curso1
-alumn6.curso = curso2
-alumn7.curso = curso2
-alumn8.curso = curso2
-alumn9.curso = curso2
+profesor1 = db.nuevoProfesor('Horacio', 'Kans')
+profesor2 = db.nuevoProfesor('Jorge', 'Mendoza')
+profesor3 = db.nuevoProfesor('Manuel', 'Benitez')
+profesor4 = db.nuevoProfesor('Angela', 'Lopez')
 
-profesor1 = Profesor(profesorNombre='Horacio', profesorApellido='Kans')
-profesor2 = Profesor(profesorNombre='Jorge', profesorApellido='Mendoza')
-profesor3 = Profesor(profesorNombre='Manuel', profesorApellido='Benitez')
-profesor4 = Profesor(profesorNombre='Angela', profesorApellido='Lopez')
+horario1 = db.nuevoHorario('Lunes', 8, 12, 1, 1)
+horario2 = db.nuevoHorario('Miercoles', 18, 22, 1, 2)
+horario3 = db.nuevoHorario('Martes', 18, 23, 2, 3)
+horario4 = db.nuevoHorario('Viernes', 8, 13, 2, 4)
+horario5 = db.nuevoHorario('Jueves', 14, 19, 2, 1)
 
-horario1 = Horario(dia='Lunes', desdeHs=8, hastaHs=12)
-horario2 = Horario(dia='Miercoles', desdeHs=18, hastaHs=22)
-horario3 = Horario(dia='Martes', desdeHs=18, hastaHs=23)
-horario4 = Horario(dia='Viernes', desdeHs=8, hastaHs=13)
-horario5 = Horario(dia='Jueves', desdeHs=14, hastaHs=19)
-
-horario1.cursos = curso1
-horario1.profesores = profesor1
-horario2.cursos = curso1
-horario2.profesores = profesor2
-horario3.cursos = curso2
-horario3.profesores = profesor3
-horario4.cursos = curso2
-horario4.profesores = profesor4
-horario5.cursos = curso2
-horario5.profesores = profesor1
-
-db.saveObject(alumn1)
-db.saveObject(profesor1)
-db.saveObject(horario1)
-db.saveList([alumn2, alumn3, alumn4, alumn5, alumn6, alumn7, alumn8, alumn9])
-db.saveList([curso1, curso2])
-db.saveList([profesor2, profesor3, profesor4])
-db.saveList([horario2, horario3, horario4, horario5])
+print(db.saveObject(alumn1),
+db.saveObject(profesor1),
+db.saveObject(horario1),
+db.saveList([alumn2, alumn3, alumn4, alumn5, alumn6, alumn7, alumn8, alumn9]),
+db.saveList([curso1, curso2]),
+db.saveList([profesor2, profesor3, profesor4]),
+db.saveList([horario2, horario3, horario4, horario5]))
 
 for x in db.listCursoAlumno():
   print(x)
