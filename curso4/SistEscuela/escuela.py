@@ -5,7 +5,7 @@ from sqlalchemy.ext.declarative import declarative_base
 class DBMannager(object):
   def __init__(self):
     try:
-      self.engine = create_engine('sqlite:///db')
+      self.engine = create_engine('sqlite:///data.sqlite')
       self.base = declarative_base()
       Session = sessionmaker(bind=self.engine)
       self.session = Session()
